@@ -1,0 +1,141 @@
+EEG = pop_loadset('filename','[batch_dfn]','filepath','[batch_dfp]');
+EEG = eeg_checkset( EEG );
+
+% add STUDY variables
+
+%identify pid and age from filename
+EEG.subject = EEG.filename(6:8);
+EEG.session = 12;
+
+%load participant log
+participants = tdfread('derivatives/seg_rest_spect/code/misc/london_participants.tsv','\t');
+p_ind = find(participants.participant_id==str2num(EEG.subject));
+
+%identify gender
+EEG.condition = num2str(participants.gender(p_ind));
+
+%identify risk/outcome
+if strcmp(EEG.filename(6),'6');
+    if participants.outcome(p_ind)==3;
+        EEG.group = 'HRA+';
+    else;
+        EEG.group = 'HRA-';
+    end;
+else;
+    EEG.group = 'LRC-';
+end;
+%fclose(fid);
+
+%identify rest videotype
+rest_inds = find(strcmpi('Rst0',{EEG.event.type}));
+mov1_inds = find(strcmpi('mov1',{EEG.event.type}));
+mov2_inds = find(strcmpi('mov2',{EEG.event.type}));
+mov3_inds = find(strcmpi('mov3',{EEG.event.type}));
+mov_inds = horzcat(mov1_inds,mov2_inds,mov3_inds);
+
+%if there is no resting data in file
+if isempty(rest_inds);
+    disp('SKIPPING [batch_dfn]: no Rst0 markers in dataset');
+    return;
+end;
+
+%I think this identifies the duration of the rest period for the 3 rest videotypes bc the video duration varied slightly per videotype, videos are 30-40 secsonds each
+
+%per email from mike: Rst0 is the onset of the resting vid. there is usually a SWIR marker around 30-40seconds later. This is used as the offset of the rest video.
+    %there are a few outlier cases where there is no SWIR marker followign the onset of a Rst0 tag. This occurs for the last Rst0 tag of the resting paradigm, if there
+    %are no other paradigms run afterward. i.e. the rst0 tag is the last tag of the file. In this case we use the median length of the videotype (eeg1: 22187 time points, eeg2: 20987 time points, eeg3: 16248 time points)
+    %to estimate the length of the video for that Rst0 tag.
+end_inds = rest_inds+1;
+
+eeg_inds = {};
+for i=1:length(rest_inds);
+    eeg_inds{i} = find(cell2mat({EEG.event.latency})==EEG.event(rest_inds(i)).latency);
+    eeg_inds{i} = setdiff(eeg_inds{i},rest_inds);
+    eeg_inds{i} = setdiff(eeg_inds{i},mov_inds);
+end
+eeg_inds = cell2mat(eeg_inds);
+
+for i=1:length(end_inds);
+    EEG.event(end+1).type = [EEG.event(eeg_inds(i)).type '_off'];
+    if EEG.event(end_inds(i)).latency>EEG.event(eeg_inds(i)).latency;
+        EEG.event(end).latency = EEG.event(end_inds(i)).latency;
+    elseif strcmp(EEG.event(eeg_inds(i)).type,'eeg1') && EEG.pnts - EEG.event(eeg_inds(i)).latency > 22187;
+        EEG.event(end).latency = EEG.event(eeg_inds(i)).latency + 22187;
+    elseif strcmp(EEG.event(eeg_inds(i)).type,'eeg2') && EEG.pnts - EEG.event(eeg_inds(i)).latency > 20987;
+        EEG.event(end).latency = EEG.event(eeg_inds(i)).latency + 20987;
+    elseif strcmp(EEG.event(eeg_inds(i)).type,'eeg3') && EEG.pnts - EEG.event(eeg_inds(i)).latency > 16248;
+        EEG.event(end).latency = EEG.event(eeg_inds(i)).latency + 16248;        
+    else;
+        EEG.event(end).latency = EEG.pnts;
+    end;
+end    
+
+%Add resting period time_info annotation
+% eeg1: woman singing nursery rhymes/ peek-a-boo ('social')
+% eeg2: brightly coloured toys moving and producing sounds ('non-social')
+% eeg3: same toys manipulated by human hand ('non-social')
+EEG = pop_marks_event_gap(EEG,{'eeg1','eeg1_off'},[],'eeg_rest',[1  0  0],'exact','on','ref_point','both','interval','on');
+EEG = pop_marks_event_gap(EEG,{'eeg2','eeg2_off'},[],'eeg_rest',[0  1  0],'exact','on','ref_point','both','interval','on');
+EEG = pop_marks_event_gap(EEG,{'eeg3','eeg3_off'},[],'eeg_rest',[0  0  1],'exact','on','ref_point','both','interval','on');
+%look at continues data in this state.
+
+% Remove flagged channels, time segments and components
+sprintf('%s','Purging flagged channels...\n');
+EEG = pop_marks_select_data(EEG,'channel marks',[],'labels',{'manual','rank'},'remove','on');
+EEG = pop_marks_select_data(EEG,'time marks',[],'labels',{'manual'},'remove','on');
+EEG = pop_marks_select_data(EEG,'component marks',[],'labels',{'manual'},'remove','on');
+EEG = eeg_checkset(EEG);
+
+%line HAS to occur before epoching
+tmpEEG = EEG;
+EEG = pop_marks_select_data(tmpEEG,'time marks',[],'labels',{'eeg_rest'},'remove','off');
+EEG = eeg_checkset(EEG);
+
+% 4-sec, 50% overlapping windows
+EEG = marks_continuous2epochs(EEG,'recurrence',2,'limits',[0 4],'keepboundary','off','eventtype','rest');
+
+%% interpolate to the 19 channel 10/20 montage
+EEG = warp_locs(EEG,'code/misc/standard_1020_bucanl19.elc', ...
+                'transform',[0,0,0,0,0,-1.57,1,1,1],'manual','off');
+EEG = interp_mont(EEG,'code/misc/standard_1020_bucanl19.elc','manual','off');
+EEG.chaninfo.nosedir = '+Y';
+EEG = eeg_checkset(EEG);
+
+sprintf('%s','Purging data...\n');
+%purge unnecessary fields...
+for i=1:length(EEG.marks.time_info);
+    EEG.marks.time_info(i).flags=[];
+end
+EEG.data_sd_ep=[];
+EEG.c_data_sd_ep=[];
+EEG.data_sd_ch=[];
+EEG.c_data_sd_ch=[];
+EEG.m_neigbr_r_ch=[];
+EEG.c_neigbr_r_ch=[];
+EEG.m_neigbr_r_lat=[];
+EEG.c_neigbr_r_lat=[];
+EEG.amica=[];
+EEG.icaact_sd1_lat=[];
+EEG.c_icaact1_sd_lat=[];
+EEG.icaact_sd2_lat=[];
+EEG.c_icaact_sd2_lat=[];
+EEG.icaact_ta_lat=[];
+EEG.c_icaact_ta_lat=[];
+EEG.icaact_b_lat=[];
+EEG.c_icaact_b_lat=[];
+EEG.icaact = [];
+EEG.icawinv = [];
+EEG.icasphere = [];
+EEG.icaweights = [];
+EEG.icachansind = [];
+
+% downsample the data to 250hz
+EEG = pop_resample( EEG, 250);
+
+% save output segmented file
+outfname='derivatives/seg_rest_spect/[/,1,batch_dfn,_,-2]_desc-SEGrest_eeg.set'
+[outpath outname outext] = fileparts(outfname);
+if ~exist(outpath,'dir');
+    mkdir(outpath);
+end
+EEG = pop_saveset( EEG, 'filename',outfname);
