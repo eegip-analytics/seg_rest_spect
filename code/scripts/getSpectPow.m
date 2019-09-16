@@ -4,19 +4,42 @@
 %NOTE: you have to have run Scotts preprocessing scripts for this to work.
 %otherwise the file wont have the variables needed for this script
 
+%This function loads EEGLAB *.set files and extracts features that are saved 
+%to CSV file. The fnamefile input is a text file containing the filenames
+%with paths to each of the *.set files to be loaded (one file per line).
+%From a bash terminal these file name text files can be created as follows:
+%for example...
+%find . -type f -name "*-SEGrest*.set" > derivatives/seg_rest_spect/code/misc/fnames.txt
+%The outfname input is the name of the file containing the output features.
+
+function getSpectPow(fnamefile,outfname)
+
+
+fid=fopen(fnamefile,'r');
+fnd=fread(fid);
+fclose(fid);
+cr_ind=find(fnd==10);
+for i=1:length(cr_ind);
+   if i==1;
+      c_fname{i}=deblank(char(fnd(3:cr_ind(i))'));
+   else
+      c_fname{i}=deblank(char(fnd(cr_ind(i-1)+3:cr_ind(i))'));
+   end
+end
+
 %use system() to establish the path to files you want to run
-[~,filenames] = system('find /Volumes/seh33@uw.ed/2019_RelativePower/1BiologicalPsychiatry/Data/qcr/boston/derivatives/lossless/sub-s3069/ses-m06/eeg/*_Seg*.set');
-filenames = strsplit(filenames,'/Volumes');
-filenames = strcat('/Volumes',filenames);
-filenames = filenames(2:end);
+%[~,filenames] = system('find /Volumes/seh33@uw.ed/2019_RelativePower/1BiologicalPsychiatry/Data/qcr/boston/derivatives/lossless/sub-s3069/ses-m06/eeg/*_Seg*.set');
+%filenames = strsplit(filenames,'/Volumes');
+%filenames = strcat('/Volumes',filenames);
+%filenames = filenames(2:end);
 
 %ROI are the channels that you want to extract power from.
 %I am selecting F3, Fz, F4, which corresopnds to chan numbers 4, 5, 6
 ROI = [4, 5, 6]; %4, 9, 14, 5, 10, 15, 6, 11, 16
 
     
-for  k=1:length(filenames);
-     EEG = pop_loadset(filenames{k});
+for  k=1:length(c_fname);
+     EEG = pop_loadset(c_fname{k});
      
      %the section below pulls participant information from the EEG data
      %structure, to be written to a csv file
@@ -46,41 +69,43 @@ for  k=1:length(filenames);
         outcome = 'no-asd';     %otherwise outcome is no ASD
     end;
     
-    if any(strcmpi(strsplit(EEG.filepath,'/'),'boston')); %if EEG.filepath contains boston
+    p=what(EEG.filepath);
+    inAbsPath=p.path;
+    if strfind(inAbsPath,'boston'); %if EEG.filepath contains boston
         site = 'boston'; %then site is boston
         gender = EEG.condition; %EEG.condition contains gender info
         session = num2str(EEG.session); %session is the visit age, 6m, 12m, etc
         if length(session)==1; session = ['0' session]; end;
         video = 'social'; %for boston videotype is always 'social'
-    elseif any(strcmpi(strsplit(EEG.filepath,'/'),'washington')); %if EEG.filepath contains 'washington'
-        site = 'washington'; %then site is washington
+    elseif strfind(EEG.filepath,'washington'); %if EEG.filepath contains 'washington'
+        site = 'washingtinAbsPathon'; %then site is washington
         gender = EEG.gender; %EEG.condition contains gender info
         session = num2str(EEG.session); %session is the visit age, 6m, 12m, etc
         if length(session)==1; session = ['0' session]; end; 
-        if any(strcmpi(strsplit(EEG.filename,'_'),'socl')); %if EEG.filename contains socl
+        if strfind(EEG.filename,'socl'); %if EEG.filename contains socl
             video = 'social'; %then videotype is social
-        elseif any(strcmpi(strsplit(EEG.filename,'_'),'toys')); %if EEG.filename contains 'toys'
+        elseif strfind(EEG.filename,'toys'); %if EEG.filename contains 'toys'
             video = 'non-social'; %then videotype is non-social (vid of toys)
         else
             video = 'combined'; %otherwise the videotype is combined. this is if you used a seg script that combined all rest videotypes into one resting marker
         end;
-    elseif any(strcmpi(strsplit(EEG.filepath,'/'),'london')); %if EEG.filepath contains 'london'
+    elseif strfind(inAbsPath,'london'); %if EEG.filepath contains 'london'
         site = 'london'; %then site is london
         if strcmp(EEG.condition,'0'); %if EEG.condition is 0 (london participant log used a 0, 1 gender coding)
             gender = 'M'; %then gender is male
         else;
             gender = 'F'; %otherwise gender is female (1)
         end;
-        if any(strcmpi(strsplit(EEG.filename,'_'),'ses-m06')); %if EEG.filename contains ses-m06
+        if strfind(EEG.filename,'ses-m06'); %if EEG.filename contains ses-m06
             session = '06'; %visit age is 6m
             video = 'social'; %videotype is always ;social' for 6m visit
         else;
             session = '12'; %otherwise visit age is 12m
-            if any(strcmpi(strsplit(EEG.filename,'_'),'rest1')); %if EEG.filename contains 'rest1'
+            if strfind(EEG.filename,'rest1'); %if EEG.filename contains 'rest1'
                 video = 'social'; %then videotype is social (video of person)
-            elseif any(strcmpi(strsplit(EEG.filename,'_'),'rest2')); %if EEG.filename contains 'rest2'
+            elseif strfind(EEG.filename,'rest2'); %if EEG.filename contains 'rest2'
                 video = 'non-social'; %then videotype is 'non-social' (video of toy)
-            elseif any(strcmpi(strsplit(EEG.filename,'_'),'rest3')); %if EEG.filename contains 'rest3'
+            elseif strfind(EEG.filename,'rest3'); %if EEG.filename contains 'rest3'
                 video = 'semi-social'; %then videotype was semi-social (hand activating a toy)
             else 
                 video = 'combined'; %if none of the above, then its combined, you ran a seg script that combined 3 videotypes into a single rest marker
@@ -97,6 +122,11 @@ for  k=1:length(filenames);
     TD_dat_power_ROI = []; %clearing this variable before each case is run 
     TD_dat_power_ROI_Rel = []; %^^
     TD_tmp_dat_power = []; %^^
+
+    TD_dat_power_ROI_f = []; %clearing this variable before each case is run 
+    TD_dat_power_ROI_Rel_f = []; %^^
+    TD_tmp_dat_power_f = []; %^^
+
     relDenom = [];
     
     delta = [];
@@ -190,7 +220,7 @@ for  k=1:length(filenames);
     %Relative Power using both the welch method (blue) and fft (red)
     figure;plot(fqs,mean(TD_dat_power_ROI_Rel,2));
     hold on;plot(fqs,mean(TD_dat_power_ROI_Rel_f,2),'r');
-    title('Relative Power');
+    title(['Relative Power ', EEG.filename]);
     
     
     %absolute power using both the welch method (blue) and fft (red)
@@ -199,7 +229,7 @@ for  k=1:length(filenames);
        
     figure;plot(fqs,mean(TD_dat_power_ROI,2));
     hold on;plot(fqs,mean(TD_dat_power_ROI,2),'r');
-    title('absolute power'); 
+    title(['absolute power ', EEG.filename]); 
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %define frequency bins for power
@@ -270,8 +300,8 @@ for  k=1:length(filenames);
     
     %POWER CSV FILE: create headers for the csv file if the csv file doesn't exist yet
     
-    if ~exist('20190910VALIDITY.csv');    
-       fid = fopen('20190910VALIDITY.csv','w');
+    %if ~exist(outfname);    
+      fid = fopen(outfname,'w');
        
       header = ['site,pid,age,gender,risk,', ...
                   'outcome,group,', ...
@@ -293,7 +323,9 @@ for  k=1:length(filenames);
                   'F3RelBeta,FzRelBeta,F4RelBeta,',...
                   'F3RelGamma,FzRelGamma,F4RelGamma,'];     
         fprintf(fid,'%s\n',header);
-    end;
+    %else
+	%disp('file already exists... doing nothing..');
+    %end;
     
     %Assigns the matlab variables that will be written to the csv file
     fprintf(fid,['%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,',...
