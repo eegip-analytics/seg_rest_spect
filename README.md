@@ -16,5 +16,12 @@ Then start EEGLAB:
 
 eeglab
 
-To run the segmentation use the batch_context EEGLAB extension to execute the "seg_rest_spect.htb" script (located in 'derivatives/seg_rest_spect/code/scripts') on the *.qcr.set files in the lossless derivatives directory.
+To run the segmentation use the batch_context EEGLAB extension to execute the "seg_rest_[site_ses].htb" script (located in 'derivatives/seg_rest_spect/code/scripts') on the *.qcr.set files in the lossless derivatives directory.
 
+To extract the power values to a csv file run the getSpectPow.m function as follows:
+
+getSpectPow('derivatives/seg_rest_spect/code/misc/fnames.txt','derivatives/seg_rest_spect/output.csv');
+
+... where the fnames.txt file contains the segmented file names to include in the analysis. generated as follows from a terminal:
+ 
+find . -type f -name "*-SEGrest*.set" > derivatives/seg_rest_spect/code/misc/fnames.tx
