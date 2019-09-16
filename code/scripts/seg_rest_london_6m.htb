@@ -52,11 +52,11 @@ EEG = eeg_checkset(EEG);
 EEG = marks_continuous2epochs(EEG,'recurrence',2,'limits',[0 4],'keepboundary','off','eventtype','rest');
 
 %% interpolate to the 19 channel 10/20 montage
-EEG = warp_locs(EEG,'code/misc/standard_1020_bucanl19.elc', ...
-                'transform',[0,0,0,0,0,-1.57,1,1,1],'manual','off');
-EEG = interp_mont(EEG,'code/misc/standard_1020_bucanl19.elc','manual','off');
-EEG.chaninfo.nosedir = '+Y';
-EEG = eeg_checkset(EEG);
+%EEG = warp_locs(EEG,'code/misc/standard_1020_bucanl19.elc', ...
+%                'transform',[0,0,0,0,0,-1.57,1,1,1],'manual','off');
+%EEG = interp_mont(EEG,'code/misc/standard_1020_bucanl19.elc','manual','off');
+%EEG.chaninfo.nosedir = '+Y';
+%EEG = eeg_checkset(EEG);
 
 
 sprintf('%s','Purging data...\n');
@@ -81,11 +81,11 @@ EEG.icaact_ta_lat=[];
 EEG.c_icaact_ta_lat=[];
 EEG.icaact_b_lat=[];
 EEG.c_icaact_b_lat=[];
-EEG.icaact = [];
-EEG.icawinv = [];
-EEG.icasphere = [];
-EEG.icaweights = [];
-EEG.icachansind = [];
+%EEG.icaact = [];
+%EEG.icawinv = [];
+%EEG.icasphere = [];
+%EEG.icaweights = [];
+%EEG.icachansind = [];
 
 % downsample the data to 250hz
 EEG = pop_resample( EEG, 250);

@@ -1,0 +1,6 @@
+./derivatives/seg_sta_nois/sub-s750/ses-m06/eeg/sub-s750_ses-m06_desc-SEGnois_eeg.set
+./derivatives/seg_sta_nois/sub-s750/ses-m06/eeg/sub-s750_ses-m06_desc-SEGsta_eeg.set
+./derivatives/seg_sta_nois/sub-s749/ses-m06/eeg/sub-s749_ses-m06_desc-SEGnois_eeg.set
+./derivatives/seg_sta_nois/sub-s749/ses-m06/eeg/sub-s749_ses-m06_desc-SEGsta_eeg.set
+./derivatives/seg_sta_nois/sub-s748/ses-m06/eeg/sub-s748_ses-m06_desc-SEGnois_eeg.set
+./derivatives/seg_sta_nois/sub-s748/ses-m06/eeg/sub-s748_ses-m06_desc-SEGsta_eeg.set

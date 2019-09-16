@@ -5,7 +5,7 @@
 %otherwise the file wont have the variables needed for this script
 
 %use system() to establish the path to files you want to run
-[~,filenames] = system('find /Volumes/seh33@uw.ed/2019_RelativePower/1BiologicalPsychiatry/Data/qcr/washington/derivatives/lossless/sub-s166/ses-m06/eeg/*_Seg*.set');
+[~,filenames] = system('find /Volumes/seh33@uw.ed/2019_RelativePower/1BiologicalPsychiatry/Data/qcr/boston/derivatives/lossless/sub-s3069/ses-m06/eeg/*_Seg*.set');
 filenames = strsplit(filenames,'/Volumes');
 filenames = strcat('/Volumes',filenames);
 filenames = filenames(2:end);
@@ -92,15 +92,65 @@ for  k=1:length(filenames);
     window = sRate*4;
     NFFT = sRate*4; %making window and NFFT variables the same size
     h=hamming(size(EEG.data,2));
- 
+    
+    %%CLEAR VARIABLES BETWEEN PARTICIPANTS
     TD_dat_power_ROI = []; %clearing this variable before each case is run 
     TD_dat_power_ROI_Rel = []; %^^
     TD_tmp_dat_power = []; %^^
+    relDenom = [];
     
-    %TD_dat_power_ROI = zeros(size(EEG.data,2),length(ROI));
-    %TD_dat_power_ROI_Rel = zeros(size(EEG.data,2),length(ROI));
+    delta = [];
+    deltaRel = [];
+    avgDelta = [];
+    avgDeltaRel = [];
+    deltaLog10 = [];
+    deltaRelLog10 = [];
+
+    theta = [];
+    thetaRel = [];
+    avgTheta = [];
+    avgThetaRel = [];
+    thetaLog10 = [];
+    thetaRelLog10 = [];
+    
+    alpha1 = [];
+    alpha1Rel = [];
+    avgAlpha1 = [];
+    avgAlpha1Rel = [];
+    alpha1Log10 = [];
+    alpha1RelLog10 = [];
+  
+    alpha2 = [];
+    alpha2Rel = [];
+    avgAlpha2 = [];
+    avgAlpha2Rel = [];
+    alpha2Log10 = [];
+    alpha2RelLog10 = [];
+
+    beta = [];
+    betaRel = [];
+    avgBeta =  [];
+    avgBetaRel = [];
+    betaLog10 = [];
+    betaRelLog10 = [];
+
+    gamma = [];
+    gammaRel = [];
+    avgGamma = [];
+    avgGammaRel = [];
+    gammaLog10 = [];
+    gammaRelLog10 = [];
+
+    absLog2Str = [];
+    relLog2Str = [];
+    avgAbsTrapz2Str = [];
+    avgRelTrapz2Str = [];
+    absPowerAllChans2Str = [];
+    relPowerAllChans2Str = [];
+
+    
     for i=1:length(ROI); %For every channel
-        %TD_tmp_dat_power = zeros(size(EEG.data,2),size(EEG.data,3));
+        
         for j=1:size(EEG.data,3); %EEG.data,3 is the number of trials. "for every trial"
             
             %pwelch call, welch method of calculating PSD
@@ -108,9 +158,9 @@ for  k=1:length(filenames);
             TD_tmp_dat_power(:,j) = Pxx; %frequencies rows x trials column? accumulating the spectrum for each trial
             
             %fft call, fft method of calculating PSD (for establishing replicability only, not to be written to csv)
-            %dh=h.*squeeze(EEG.data(ROI(i),:,j))';
-            %fq=fft(dh);
-            %TD_tmp_dat_power_f(:,j)=abs(fq(1:length(TD_tmp_dat_power(:,j)))).^2;% squared (^2) to match "power" values like Pxx of pwelch.
+            dh=h.*squeeze(EEG.data(ROI(i),:,j))';
+            fq=fft(dh);
+            TD_tmp_dat_power_f(:,j)=abs(fq(1:length(TD_tmp_dat_power(:,j)))).^2;% squared (^2) to match "power" values like Pxx of pwelch.
             
         end
         
@@ -120,183 +170,141 @@ for  k=1:length(filenames);
          end
          
          TD_dat_power_ROI(:,i) = mean(TD_tmp_dat_power(:,:),2); %calculating average spectrum across trials for channel i. frequencies rows? x channels column
+         TD_dat_power_ROI_f(:,i) = mean(TD_tmp_dat_power_f(:,:),2); %doing the same but for fft (replicability only)
          
-         %RelativePower= freqofinterest(:,:)./sum(freqofinterest,1) % ^^
+         %RelativePower that will be used for plotting figures... = freqofinterest(:,:)./sum(freqofinterest,1) % ^^
          TD_dat_power_ROI_Rel(:,i)=TD_dat_power_ROI(:,i)./trapz(F(fndx),(TD_dat_power_ROI(fndx,i))); % F is freqs, ichan is the channel index, fndx is the vector of frequency bins
+         TD_dat_power_ROI_Rel_f(:,i)= TD_dat_power_ROI_f(:,i)./trapz(F(fndx),(TD_dat_power_ROI_f(fndx,i))); %^^ for FFT replicability test
          
         %all of the rows are mean spectrum across trials for that channel
         
-        %TD_dat_power_ROI_f(:,i) = mean(TD_tmp_dat_power_f(:,:),2); %doing the same but for fft (replicability only)
+        
     end
 
+    %plot psd for both pwelch (blue) and fft (red)on same graph. 
+    %only do this during testing, otherwise COMMENT OUT figure & hold so it doesnt generate a plot for every single file
+    %when plotting pwelch and fft PSDs, they should overlap almost perfectly
+    fqs=0:length(TD_dat_power_ROI_Rel)-1;
+    fqs=fqs*.25;                
     
-    %TD_dat_power_ROI_Rel=TD_dat_power_ROI./sum(TD_dat_power_ROI(9:201,:),1); %converting to relative power. summing each channel (column).
-    %freqofinterest=TD_dat_power_ROI(2:50,:); %2019/05/011 testing out code
-   
-    %FFT to test for replicability of pwelch
-    %TD_dat_power_ROI_Rel_f(:,i)=TD_dat_power_ROI_f(:,i_)./trapz(F(fndx),(TD_dat_power_ROI(fndx,i)));
-    
-    %plot psd for both pwelch (blue) and fft (red)on same graph. only do this during testing, otherwise comment out 128 (figure) & 129 (hold). when plotting pwelch and fft PSDs, they should overlap almost perfectly
-    %fqs=0:length(TD_dat_power_ROI_Rel)-1;
-    %fqs=fqs*.25;                
-    %figure;plot(fqs,TD_dat_power_ROI_Rel);
-    %hold on;plot(fqs,TD_dat_power_ROI_Rel_f,'r');
-    
-    %plot psd for absolute power using both the welch method and fft (red)
-    %figure;plot(fqs,TD_dat_power_ROI);
-    %hold on;plot(fqs,TD_dat_power_ROI_f,'r');
-    
-    %plot LOG TRANSFORMED psd for absolute power using both the welch method and fft (red)
-    %figure;plot(fqs,log10(TD_dat_power_ROI),'b');
-    %hold on;plot(fqs,log10(TD_dat_power_ROI_f),'r');
+    %Relative Power using both the welch method (blue) and fft (red)
+    figure;plot(fqs,mean(TD_dat_power_ROI_Rel,2));
+    hold on;plot(fqs,mean(TD_dat_power_ROI_Rel_f,2),'r');
+    title('Relative Power');
     
     
-    
-    %log transform the relative power, and average across frontal
-    %channels.It is then creating a 4th channel which is the values of the
-    %log average signal
-    TD_pow_Rel_avg = mean(TD_dat_power_ROI_Rel,2); % average across channels
-    logTDpowRelAvg = log10(TD_pow_Rel_avg); % log10 transform 
-    TD_dat_power_ROI_Rel(:,4) =  logTDpowRelAvg; %this is adding logTDpowRelAvg to the 4th column of TD_dat_power_ROI_REL so that it can be written to the csv without substantially chaning the code.
-    
-    %define frequency bands for ABSOLUTE power
-    
-    delta_ABS=(TD_dat_power_ROI(9:17,:)); %2-4hz, technically 2-3.75hz, corresponds to bins 9:17
-    
-    delta_ABS=sum(delta_ABS,1); %sums the values in bins above
-    
-    delta_ABS=num2str(sum(delta_ABS,1),'%f,'); %converts integers to string so that it can be written to the csv
-    delta_ABS=delta_ABS(1:end-1); %values for chans 4,5,6 are in one cell, so this tells it how to index the one cell to get the 3 channels delta values and write it to different cells in the csv
-    
-    theta_ABS=(TD_dat_power_ROI(18:25,:));
-    
-    theta_ABS=sum(theta_ABS,1);
-    
-    theta_ABS=num2str(sum(theta_ABS,1),'%f,');
-    theta_ABS=theta_ABS(1:end-1);
-    
-    alpha1_ABS=(TD_dat_power_ROI(26:37,:)); %6-9hz, technically 6.25
-    
-    alpha1_ABS=sum(alpha1_ABS,1);
-    
-    alpha1_ABS=num2str(sum(alpha1_ABS,1),'%f,');
-    alpha1_ABS=alpha1_ABS(1:end-1);
-    
-    
-    alpha2_ABS=(TD_dat_power_ROI_Rel(38:53,:)); %9-13hz, technically 9.25
-    
-    alpha2_ABS=sum(alpha2_ABS,1);
-    
-    alpha2_ABS=num2str(sum(alpha2_ABS,1),'%f,');
-    alpha2_ABS=alpha2_ABS(1:end-1);
-    
-    beta_ABS=(TD_dat_power_ROI(54:121,:)); %13-30hz, technically 30.25
-    
-    beta_ABS=sum(beta_ABS,1);
-    
-    beta_ABS=num2str(sum(beta_ABS,1),'%f,');
-    beta_ABS=beta_ABS(1:end-1);
-    
-    gamma_ABS=(TD_dat_power_ROI(122:201,:)); %30hz - 50hz, technically 30.25
-    
-    gamma_ABS=sum(gamma_ABS,1);
-    
-    gamma_ABS=num2str(sum(gamma_ABS,1),'%f,');
-    gamma_ABS=gamma_ABS(1:end-1);
+    %absolute power using both the welch method (blue) and fft (red)
+    %James can you help here? I can't figure out how to plot the
+    %trapezoidal absolute power!
+       
+    figure;plot(fqs,mean(TD_dat_power_ROI,2));
+    hold on;plot(fqs,mean(TD_dat_power_ROI,2),'r');
+    title('absolute power'); 
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %define frequency bins for RELATIVE power
-    delta=(TD_dat_power_ROI_Rel(9:17,:)); %2-4hz, technically 2-3.75hz, corresponds to bins 9:17
+    %define frequency bins for power
+    %delta=(TD_dat_power_ROI_Rel(9:17,:)); %2-4hz, technically 2-3.75hz, corresponds to bins 9:17
+    %delta=sum(delta,1); %sums the values in bins above
     
-    delta=sum(delta,1); %sums the values in bins above
+    relDenom = trapz(F(fndx),TD_dat_power_ROI(fndx,:));  %the power of 2-50hz (our freq range of interest) using the trapezoidal method. It will be the denominator of every bands relative power calculation    
+  
+    %DELTA
+    delta = trapz(F(9:17),TD_dat_power_ROI(9:17,:)); %the absolute power of delta, using the trapezoidal method. %2-4hz corresponds to bins 9:17
+    deltaRel = delta./relDenom; %the relative power of delta. dividing delta power by the power of our freq range of interest
+    avgDelta = mean(delta,2); %average across channels for absolute delta
+    avgDeltaRel = mean(deltaRel,2); %average across channels for relative delta
+    deltaLog10 = log10(avgDelta); %log 10 transformation of averaged absolute power of delta
+    deltaRelLog10 = log10(avgDeltaRel); %log 10 transformation of averaged relative power of delta
+          
+    %THETA
+    theta = trapz(F(18:25),TD_dat_power_ROI(18:25,:)); %the absolute power of theta, using the trapezoidal method. %4-6hz corresponds to bins 18:25
+    thetaRel = theta./relDenom;  %the relative power of theta. dividing theta power by the power of our freq range of interest
+    avgTheta = mean(theta,2); %average across channels for absolute theta
+    avgThetaRel = mean(thetaRel,2); %average across channels for relative theta
+    thetaLog10 = log10(avgTheta); %log 10 transformation of averaged absolute power of theta
+    thetaRelLog10 = log10(avgThetaRel); %log 10 transformation of averaged relative power of theta
     
-    delta=num2str(sum(delta,1),'%f,'); %converts integers to string so that it can be written to the csv
-    delta=delta(1:end-1); %values for chans 4,5,6 are in one cell, so this tells it how to index the one cell to get the 3 channels delta values and write it to different cells in the csv
+    %LOW ALPHA
+    alpha1 = trapz(F(26:37),TD_dat_power_ROI(26:37,:)); %the absolute power of Low Alpha, using the trapezoidal method. %6-8hz corresponds to bins 26:37
+    alpha1Rel = alpha1./relDenom; %the relative power of Low Alpha, using the trapezoidal method. dividing alpha1 power by the power of our freq range of interest
+    avgAlpha1 = mean(alpha1,2); %average across channels for absolute Low Alpha
+    avgAlpha1Rel = mean(alpha1Rel,2); %average across channels for relative theta
+    alpha1Log10 = log10(avgAlpha1); %log 10 transformation of averaged absolute power of Low Alpha
+    alpha1RelLog10 = log10(avgAlpha1Rel); %log 10 transformation of averaged relative power of Low Alpha
     
-    theta=(TD_dat_power_ROI_Rel(18:25,:));
+    %HIGH AlPHA
+    alpha2 = trapz(F(38:53),TD_dat_power_ROI(38:53,:)); %the absolute power of High Alpha, using the trapezoidal method. %9-13hz corresponds to bins 38:53
+    alpha2Rel = alpha2./relDenom; %the relative power of High Alpha, using the trapezoidal method. dividing high alpha power by the power of our freq range of interest
+    avgAlpha2 = mean(alpha2,2); %average across channels for absolute High Alpha
+    avgAlpha2Rel = mean(alpha2Rel,2); %average across channels for relative High Alpha
+    alpha2Log10 = log10(avgAlpha2); %log 10 transformation of averaged absolute power of High Alpha
+    alpha2RelLog10 = log10(avgAlpha2Rel); %log 10 transformation of averaged relative power of High Alpha
     
-    theta=sum(theta,1);
+    %BETA
+    beta = trapz(F(54:121),TD_dat_power_ROI(54:121,:));%the absolute power of beta, using the trapezoidal method. 13-30hz corresponds to bins 54:121
+    betaRel = beta./relDenom; %the relative power of beta, using the trapezoidal method. dividing beta power by the power of our freq range of interest
+    avgBeta =  mean(beta,2); %average across channels for absolute beta
+    avgBetaRel = mean(betaRel,2); %average across channels for relative Beta
+    betaLog10 = log10(avgBeta); %log 10 transformation of averaged absolute power of Beta
+    betaRelLog10 = log10(avgBetaRel);
     
-    theta=num2str(sum(theta,1),'%f,');
-    theta=theta(1:end-1);
+    %GAMMA
+    gamma = trapz(F(122:201),TD_dat_power_ROI(122:201,:));%the absolute power of gamma, using the trapezoidal method. 30-50hz corresponds to bins 54:121
+    gammaRel = gamma./relDenom; %the relative power of gamma, using the trapezoidal method. dividing beta power by the power of our freq range of interest
+    avgGamma = mean(gamma,2); %average across channels for absolute gamma
+    avgGammaRel = mean(gammaRel,2); %average across channels for relative Gamma
+    gammaLog10 = log10(avgGamma); %log 10 transformation of averaged absolute power of Gamma
+    gammaRelLog10 = log10(avgGammaRel);
+         
     
-    alpha1=(TD_dat_power_ROI_Rel(26:37,:)); %6-9hz, technically 6.25
+    %Convert Values into string so that they can be written to the CSVfile. THis also organizes the variables in a intuitive way for when
+    %they are written to the CSV
+  
+    absLog2Str = num2str([deltaLog10,thetaLog10,alpha1Log10,alpha2Log10,betaLog10,gammaLog10], '%f,');
+    relLog2Str = num2str([deltaRelLog10,thetaRelLog10,alpha1RelLog10,alpha2RelLog10,betaRelLog10,gammaRelLog10], '%f,');
+    avgAbsTrapz2Str = num2str([avgDelta,avgTheta,avgAlpha1,avgAlpha2,avgBeta,avgGamma], '%f,');
+    avgRelTrapz2Str = num2str([avgDeltaRel,avgThetaRel,avgAlpha1Rel,avgAlpha2Rel,avgBetaRel,avgGammaRel], '%f,');
+    absPowerAllChans2Str = num2str([delta,theta,alpha1,alpha2,beta,gamma], '%f,');
+    relPowerAllChans2Str = num2str([deltaRel,thetaRel,alpha1Rel,alpha2Rel,betaRel,gammaRel], '%f,');
+    sRate = num2str(EEG.srate); %convert to string so that it can be written to csv
     
-    alpha1=sum(alpha1,1);
+    %POWER CSV FILE: create headers for the csv file if the csv file doesn't exist yet
     
-    alpha1=num2str(sum(alpha1,1),'%f,');
-    alpha1=alpha1(1:end-1);
-    
-    
-    alpha2=(TD_dat_power_ROI_Rel(38:53,:)); %9-13hz, technically 9.25
-    
-    alpha2=sum(alpha2,1);
-    
-    alpha2=num2str(sum(alpha2,1),'%f,');
-    alpha2=alpha2(1:end-1);
-    
-    beta=(TD_dat_power_ROI_Rel(54:121,:)); %13-30hz, technically 30.25
-    
-    beta=sum(beta,1);
-    
-    beta=num2str(sum(beta,1),'%f,');
-    beta=beta(1:end-1);
-    
-    gamma=(TD_dat_power_ROI_Rel(122:201,:)); %30hz - 50hz, technically 30.25
-    
-    gamma=sum(gamma,1);
-    
-    gamma=num2str(sum(gamma,1),'%f,');
-    gamma=gamma(1:end-1);
-                    
-    % RELATIVE POWER CSV FILE: create headers for the csv file if the csv file doesn't exist yet
-    if ~exist('PowerChecks166.csv');    
-         fid = fopen('Powerchecks166.csv','w');
-
-        header = {'site','pid','age','gender','risk', ...
-                  'outcome','group','video','nTrials', ...
-                  'Delta_LF','Delta_MF','Delta_RF','Delta_LA', ...
-                  'Theta_LF','Theta_MF','Theta_RF','Theta_LA', ...
-                  'Alpha1_LF','Alpha1_MF','Alpha1_RF','Alpha1_LA', ...
-                  'Alpha2_LF','Alpha2_MF','Alpha2_RF','Alpha2_LA', ...
-                  'Beta_LF','Beta_MF','Beta_RF','Beta_LA', ...
-                  'Gamma_LF','Gamma_MF','Gamma_RF','Gamma_LA'};
-        fprintf(fid,'%s,',header{1,1:end-1});
-        fprintf(fid,'%s\n',header{1,end});
+    if ~exist('20190910VALIDITY.csv');    
+       fid = fopen('20190910VALIDITY.csv','w');
+       
+      header = ['site,pid,age,gender,risk,', ...
+                  'outcome,group,', ...
+                  'video,nTrials,sRate,',...
+                  'absDeltaLog,absThetaLog,absAlpha1Log,absAlpha2Log,absBetaLog,absGammaLog,',...
+                  'relDeltaLog,relThetaLog,relAlpha1Log,relAlpha2Log,relBetaLog,relGammaLog,',...
+                  'trapzAbsDelta,trapzAbsTheta,trapzAbsAlpha1,trapzAbsAlpha2,trapzAbsBeta,trapzAbsGamma,',...
+                  'trapzRelDelta,trapzRelTheta,trapzRelAlpha1,trapzRelAlpha2,trapzRelBeta,trapzRelGamma,',...
+                  'F3AbsDelta,FzAbsDelta,F4AbsDelta,',...
+                  'F3AbsTheta,FzAbsTheta,F4AbsTheta,',...
+                  'F3AbsAlpha1,FzAbsAlpha1,F4AbsAlpha1,',...
+                  'F3AbsAlpha2,FzAbsAlpha2,F4AbsAlpha2,',...
+                  'F3AbsBeta,FzAbsBeta,F4AbsBeta,',...
+                  'F3AbsGamma,FzAbsGamma,F4AbsGamma,',...
+                  'F3RelDelta,FzRelDelta,F4RelDelta,',...
+                  'F3RelTheta,FzRelTheta,F4RelTheta,',...
+                  'F3RelAlpha1,FzRelAlpha1,F4RelAlpha1,',...
+                  'F3RelAlpha2,FzRelAlpha2,F4RelAlpha2,',...
+                  'F3RelBeta,FzRelBeta,F4RelBeta,',...
+                  'F3RelGamma,FzRelGamma,F4RelGamma,'];     
+        fprintf(fid,'%s\n',header);
     end;
     
+    %Assigns the matlab variables that will be written to the csv file
+    fprintf(fid,['%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,',...
+                '%s%s%s%s%s%s\n'],...
+                site,subj,session,gender,risk,outcome,group,video,Trials,sRate,...
+                absLog2Str,...
+                relLog2Str,...
+                avgAbsTrapz2Str,...
+                avgRelTrapz2Str,...
+                absPowerAllChans2Str,...
+                relPowerAllChans2Str);
     
-    
-    %this section assigns the variables to be written to the corresponding
-    %headers. make sure order of headers and order of data is the same
-    data={site,subj,session,gender,risk,outcome,group,video,Trials,delta,theta,alpha1,alpha2,beta,gamma};
-    fprintf(fid,'%s,',data{1,1:end-1});
-    fprintf(fid,'%s\n',data{1,end});
-    
-      % ABSOLUTE POWER CSV FILE: create headers for the csv file if the csv file doesn't exist yet
-    %if ~exist('absolutePower.csv');    
-     %    fid = fopen('absolutepower.csv','w');
-
-      %  header = {'site','pid','age','gender','risk', ...
-      %            'outcome','group','video','nTrials' ...
-      %            'Delta_LF','Delta_MF','Delta_RF', ...
-      %            'Theta_LF','Theta_MF','Theta_RF', ...
-      %            'Alpha1_LF','Alpha1_MF','Alpha1_RF', ...
-      %            'Alpha2_LF','Alpha2_MF','Alpha2_RF', ...
-      %            'Beta_LF','Beta_MF','Beta_RF', ...
-      %            'Gamma_LF','Gamma_MF','Gamma_RF'};
-      %  fprintf(fid,'%s,',header{1,1:end-1});
-      %  fprintf(fid,'%s\n',header{1,end});
-    %end;
-    
-    
-    
-    %this section assigns the variables to be written to the corresponding
-    %headers. make sure order of headers and order of data is the same
-   % data={site,subj,session,gender,risk,outcome,group,video,Trials,delta_ABS,theta_ABS,alpha1_ABS,alpha2_ABS,beta_ABS,gamma_ABS};
-   % fprintf(fid,'%s,',data{1,1:end-1});
-   % fprintf(fid,'%s\n',data{1,end});
-    
-    % TD_dat_power_ROI_subs(:,:,k) = TD_dat_power_ROI;
 end
     fclose(fid);
