@@ -254,14 +254,13 @@ for  k=1:length(c_fname);
     title(['absolute power ', EEG.filename]); 
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %define frequency bins for power
-    %delta=(TD_dat_power_ROI_Rel(9:17,:)); %2-4hz, technically 2-3.75hz, corresponds to bins 9:17
-    %delta=sum(delta,1); %sums the values in bins above
+
     
     relDenom = trapz(F(fndx),TD_dat_power_ROI(fndx,:));  %the power of 2-50hz (our freq range of interest) using the trapezoidal method. It will be the denominator of every bands relative power calculation    
   
-    %DELTA
-    delta = trapz(F(9:17),TD_dat_power_ROI(9:17,:)); %the absolute power of delta, using the trapezoidal method. %2-4hz corresponds to bins 9:17
+     %DELTA
+    deltaIndx = find(F>=2 & F<4);
+    delta = trapz(F(deltaIndx),TD_dat_power_ROI(deltaIndx,:)); %the absolute power of delta, using the trapezoidal method. %2-4hz 
     deltaRel = delta./relDenom; %the relative power of delta. dividing delta power by the power of our freq range of interest
     avgDelta = mean(delta,2); %average across channels for absolute delta
     avgDeltaRel = mean(deltaRel,2); %average across channels for relative delta
@@ -269,7 +268,8 @@ for  k=1:length(c_fname);
     deltaRelLog10 = log10(avgDeltaRel); %log 10 transformation of averaged relative power of delta
           
     %THETA
-    theta = trapz(F(18:25),TD_dat_power_ROI(18:25,:)); %the absolute power of theta, using the trapezoidal method. %4-6hz corresponds to bins 18:25
+    thetaIndx=find (F>=4 & F<6);
+    theta = trapz(F(thetaIndx),TD_dat_power_ROI(thetaIndx,:)); %the absolute power of theta, using the trapezoidal method. %4-6hz 
     thetaRel = theta./relDenom;  %the relative power of theta. dividing theta power by the power of our freq range of interest
     avgTheta = mean(theta,2); %average across channels for absolute theta
     avgThetaRel = mean(thetaRel,2); %average across channels for relative theta
@@ -277,7 +277,8 @@ for  k=1:length(c_fname);
     thetaRelLog10 = log10(avgThetaRel); %log 10 transformation of averaged relative power of theta
     
     %LOW ALPHA
-    alpha1 = trapz(F(26:37),TD_dat_power_ROI(26:37,:)); %the absolute power of Low Alpha, using the trapezoidal method. %6-8hz corresponds to bins 26:37
+    alpha1Indx=find(F>=6 & F<9);
+    alpha1 = trapz(F(alpha1Indx),TD_dat_power_ROI(alpha1Indx,:)); %the absolute power of Low Alpha, using the trapezoidal method. %6-9hz 
     alpha1Rel = alpha1./relDenom; %the relative power of Low Alpha, using the trapezoidal method. dividing alpha1 power by the power of our freq range of interest
     avgAlpha1 = mean(alpha1,2); %average across channels for absolute Low Alpha
     avgAlpha1Rel = mean(alpha1Rel,2); %average across channels for relative theta
@@ -285,7 +286,8 @@ for  k=1:length(c_fname);
     alpha1RelLog10 = log10(avgAlpha1Rel); %log 10 transformation of averaged relative power of Low Alpha
     
     %HIGH AlPHA
-    alpha2 = trapz(F(38:53),TD_dat_power_ROI(38:53,:)); %the absolute power of High Alpha, using the trapezoidal method. %9-13hz corresponds to bins 38:53
+    alpha2Indx=find(F>=9 & F<13);
+    alpha2 = trapz(F(alpha2Indx),TD_dat_power_ROI(alpha2Indx,:)); %the absolute power of High Alpha, using the trapezoidal method. %9-13hz 
     alpha2Rel = alpha2./relDenom; %the relative power of High Alpha, using the trapezoidal method. dividing high alpha power by the power of our freq range of interest
     avgAlpha2 = mean(alpha2,2); %average across channels for absolute High Alpha
     avgAlpha2Rel = mean(alpha2Rel,2); %average across channels for relative High Alpha
@@ -293,7 +295,8 @@ for  k=1:length(c_fname);
     alpha2RelLog10 = log10(avgAlpha2Rel); %log 10 transformation of averaged relative power of High Alpha
     
     %BETA
-    beta = trapz(F(54:121),TD_dat_power_ROI(54:121,:));%the absolute power of beta, using the trapezoidal method. 13-30hz corresponds to bins 54:121
+    betaIndx=find(F>=13 & F<30);
+    beta = trapz(F(betaIndx),TD_dat_power_ROI(betaIndx,:));%the absolute power of beta, using the trapezoidal method. 13-30hz 
     betaRel = beta./relDenom; %the relative power of beta, using the trapezoidal method. dividing beta power by the power of our freq range of interest
     avgBeta =  mean(beta,2); %average across channels for absolute beta
     avgBetaRel = mean(betaRel,2); %average across channels for relative Beta
@@ -301,7 +304,8 @@ for  k=1:length(c_fname);
     betaRelLog10 = log10(avgBetaRel);
     
     %GAMMA
-    gamma = trapz(F(122:201),TD_dat_power_ROI(122:201,:));%the absolute power of gamma, using the trapezoidal method. 30-50hz corresponds to bins 54:121
+    gammaIndx=find(F>=30 & F<50);
+    gamma = trapz(F(gammaIndx),TD_dat_power_ROI(gammaIndx,:));%the absolute power of gamma, using the trapezoidal method. 30-50hz 
     gammaRel = gamma./relDenom; %the relative power of gamma, using the trapezoidal method. dividing beta power by the power of our freq range of interest
     avgGamma = mean(gamma,2); %average across channels for absolute gamma
     avgGammaRel = mean(gammaRel,2); %average across channels for relative Gamma
