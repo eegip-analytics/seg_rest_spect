@@ -1,0 +1,294 @@
+%This Script calculates relative power for all Channesl  for six frequency bands
+%it also gathers demographic information: site, pid, gender, risk, outcome
+%it writes all of this information to a csv file
+
+%This function loads EEGLAB *.set files and extracts features that are saved 
+%to CSV file. The fnamefile input is a text file containing the filenames
+%with paths to each of the *.set files to be loaded (one file per line).
+%From a bash terminal these file name text files can be created as follows:
+%for example...
+%find . -type f -name "*-SEGrest*.set" > derivatives/seg_rest_spect/code/misc/fnames.txt
+%The outfname input is the name of the file containing the output features.
+
+function getSpectPow_chan(fnamefile,outfname)
+
+
+fidIn=fopen(fnamefile,'r');
+fnd=fread(fidIn);
+fclose(fidIn);
+cr_ind=find(fnd==10);
+for i=1:length(cr_ind);
+   if i==1;
+      c_fname{i}=deblank(char(fnd(3:cr_ind(i))'));
+   else
+      c_fname{i}=deblank(char(fnd(cr_ind(i-1)+3:cr_ind(i))'));
+   end
+end
+
+
+
+
+% frontal_labs={'AF8','Fpz','AF7','F3','Fz','F4'};1,2,3,4,5,6
+% central_labs={'C3','Cz','C4'};9,10,11
+% posterior_labs={'P3','Pz','P4','PO7','PO8','Oz'};14,15,16,17,18,19
+% temporal_labs={'FT8','TP8','FT7','TP7'};7,8,12,13
+
+
+ROI = [1, 2, 3, 4, 5, 6, 9, 10, 11, 14, 15, 16, 17, 18, 19, 7, 8, 12, 13];
+
+fidOut = fopen(outfname,'w');       
+header = ['site,pid,age,gender,risk,', ...
+          'outcome,group,', ...
+          'video,nTrials,sRate,',...
+          'AF8AbsDelta,FpzAbsDelta,AF7AbsDelta,F3AbsDelta,FzAbsDelta,F4AbsDelta,C3AbsDelta,CzAbsDelta,C4AbsDelta,P3AbsDelta,PzAbsDelta,P4AbsDelta,PO7AbsDelta,PO8AbsDelta,OzAbsDelta,FT8AbsDelta,TP8AbsDelta,FT7AbsDelta,TP7AbsDelta,',...
+          'AF8AbsTheta,FpzAbsTheta,AF7AbsTheta,F3AbsTheta,FzAbsTheta,F4AbsTheta,C3AbsTheta,CzAbsTheta,C4AbsTheta,P3AbsTheta,PzAbsTheta,P4AbsTheta,PO7AbsTheta,PO8AbsTheta,OzAbsTheta,FT8AbsTheta,TP8AbsTheta,FT7AbsTheta,TP7AbsTheta,',...
+          'AF8AbsAlpha1,FpzAbsAlpha1,AF7AbsAlpha1,F3AbsAlpha1,FzAbsAlpha1,F4AbsAlpha1,C3AbsAlpha1,CzAbsAlpha1,C4AbsAlpha1,P3AbsAlpha1,PzAbsAlpha1,P4AbsAlpha1,PO7AbsAlpha1,PO8AbsAlpha1,OzAbsAlpha1,FT8AbsAlpha1,TP8AbsAlpha1,FT7AbsAlpha1,TP7AbsAlpha1,',...
+          'AF8AbsAlpha2,FpzAbsAlpha2,AF7AbsAlpha2,F3AbsAlpha2,FzAbsAlpha2,F4AbsAlpha2,C3AbsAlpha2,CzAbsAlpha2,C4AbsAlpha2,P3AbsAlpha2,PzAbsAlpha2,P4AbsAlpha2,PO7AbsAlpha2,PO8AbsAlpha2,OzAbsAlpha2,FT8AbsAlpha2,TP8AbsAlpha2,FT7AbsAlpha2,TP7AbsAlpha2,',...
+          'AF8AbsBeta,FpzAbsBeta,AF7AbsBeta,F3AbsBeta,FzAbsBeta,F4AbsBeta,C3AbsBeta,CzAbsBeta,C4AbsBeta,P3AbsBeta,PzAbsBeta,P4AbsBeta,PO7AbsBeta,PO8AbsBeta,OzAbsBeta,FT8AbsBeta,TP8AbsBeta,FT7AbsBeta,TP7AbsBeta,',...
+          'AF8AbsGamma,FpzAbsGamma,AF7AbsGamma,F3AbsGamma,FzAbsGamma,F4AbsGamma,C3AbsGamma,CzAbsGamma,C4AbsGamma,P3AbsGamma,PzAbsGamma,P4AbsGamma,PO7AbsGamma,PO8AbsGamma,OzAbsGamma,FT8AbsGamma,TP8AbsGamma,FT7AbsGamma,TP7AbsGamma,',...
+          'AF8RelDelta,FpzRelDelta,AF7RelDelta,F3RelDelta,FzRelDelta,F4RelDelta,C3RelDelta,CzRelDelta,C4RelDelta,P3RelDelta,PzRelDelta,P4RelDelta,PO7RelDelta,PO8RelDelta,OzRelDelta,FT8RelDelta,TP8RelDelta,FT7RelDelta,TP7RelDelta,',...
+          'AF8RelTheta,FpzRelTheta,AF7RelTheta,F3RelTheta,FzRelTheta,F4RelTheta,C3RelTheta,CzRelTheta,C4RelTheta,P3RelTheta,PzRelTheta,P4RelTheta,PO7RelTheta,PO8RelTheta,OzRelTheta,FT8RelTheta,TP8RelTheta,FT7RelTheta,TP7RelTheta,',...
+          'AF8RelAlpha1,FpzRelAlpha1,AF7RelAlpha1,F3RelAlpha1,FzRelAlpha1,F4RelAlpha1,C3RelAlpha1,CzRelAlpha1,C4RelAlpha1,P3RelAlpha1,PzRelAlpha1,P4RelAlpha1,PO7RelAlpha1,PO8RelAlpha1,OzRelAlpha1,FT8RelAlpha1,TP8RelAlpha1,FT7RelAlpha1,TP7RelAlpha1,',...
+          'AF8RelAlpha2,FpzRelAlpha2,AF7RelAlpha2,F3RelAlpha2,FzRelAlpha2,F4RelAlpha2,C3RelAlpha2,CzRelAlpha2,C4RelAlpha2,P3RelAlpha2,PzRelAlpha2,P4RelAlpha2,PO7RelAlpha2,PO8RelAlpha2,OzRelAlpha2,FT8RelAlpha2,TP8RelAlpha2,FT7RelAlpha2,TP7RelAlpha2,',...
+          'AF8RelBeta,FpzRelBeta,AF7RelBeta,F3RelBeta,FzRelBeta,F4RelBeta,C3RelBeta,CzRelBeta,C4RelBeta,P3RelBeta,PzRelBeta,P4RelBeta,PO7RelBeta,PO8RelBeta,OzRelBeta,FT8RelBeta,TP8RelBeta,FT7RelBeta,TP7RelBeta,',...
+          'AF8RelGamma,FpzRelGamma,AF7RelGamma,F3RelGamma,FzRelGamma,F4RelGamma,C3RelGamma,CzRelGamma,C4RelGamma,P3RelGamma,PzRelGamma,P4RelGamma,PO7RelGamma,PO8RelGamma,OzRelGamma,FT8RelGamma,TP8RelGamma,FT7RelGamma,TP7RelGamma,'];
+          
+          
+               
+fprintf(fidOut,'%s\n',header);
+
+    
+for  k=1:length(c_fname);
+     EEG = pop_loadset(c_fname{k});
+     
+     %the section below pulls participant information from the EEG data
+     %structure, to be written to a csv file
+     
+     EEG.subject = EEG.filename(6:9); %loads pid
+     subj = EEG.subject; %participant id
+     group = EEG.group; %group is risk + outcome, high risk asd, high risk no asd, etc.
+     
+    Trials = num2str(EEG.trials); %converts number of trials to string so that it can be written to the csv
+     
+    risk = 'na';
+    if strncmp(group,'HR',2);       %if EEG.group contains HR
+        risk = 'HR';                %then participiant is HR: high risk
+    elseif strncmp(group,'LR',2);   %if EEG.group contains LR
+        risk = 'LR';                %then participant is LR: low risk
+    elseif strncmp(group,'lang',2); %if EEG.group contains 'lang'
+        risk = 'lang';              %then participant is lang: language risk (occurs in boston dataset only)
+    else risk = 'UKN';              %if none of the above then risk is unknown
+    end;
+
+    outcome = 'na';
+    if strfind(group,'UKN');    %if EEG.group contains UKN
+        outcome = 'unknown';    %then outcome is unknown
+    elseif strfind(group,'+');  %if EEG.group contains + then
+        outcome = 'asd';        %outcome is ASD
+    else;
+        outcome = 'no-asd';     %otherwise outcome is no ASD
+    end;
+    
+    p=what(EEG.filepath);
+    inAbsPath=p.path;
+    if strfind(inAbsPath,'boston'); %if EEG.filepath contains boston
+        site = 'boston'; %then site is boston
+        gender = EEG.condition; %EEG.condition contains gender info
+        session = num2str(EEG.session); %session is the visit age, 6m, 12m, etc
+        if length(session)==1; session = ['0' session]; end;
+        video = 'social'; %for boston videotype is always 'social'
+    elseif strfind(EEG.filepath,'Washington'); %if EEG.filepath contains 'washington'
+        site = 'washingtinAbsPathon'; %then site is washington
+        gender = EEG.gender; %EEG.condition contains gender info
+        session = num2str(EEG.session); %session is the visit age, 6m, 12m, etc
+        if length(session)==1; session = ['0' session]; end; 
+        if strfind(EEG.filename,'socl'); %if EEG.filename contains socl
+            video = 'social'; %then videotype is social
+        elseif strfind(EEG.filename,'toys'); %if EEG.filename contains 'toys'
+            video = 'non-social'; %then videotype is non-social (vid of toys)
+        else
+            video = 'combined'; %otherwise the videotype is combined. this is if you used a seg script that combined all rest videotypes into one resting marker
+        end;
+    elseif strfind(inAbsPath,'London'); %if EEG.filepath contains 'london'
+        site = 'london'; %then site is london
+        if strcmp(EEG.condition,'0'); %if EEG.condition is 0 (london participant log used a 0, 1 gender coding)
+            gender = 'M'; %then gender is male
+        else;
+            gender = 'F'; %otherwise gender is female (1)
+        end;
+        if strfind(EEG.filename,'ses-m06'); %if EEG.filename contains ses-m06
+            session = '06'; %visit age is 6m
+            video = 'social'; %videotype is always ;social' for 6m visit
+        else;
+            session = '12'; %otherwise visit age is 12m
+            if strfind(EEG.filename,'rest1'); %if EEG.filename contains 'rest1'
+                video = 'social'; %then videotype is social (video of person)
+            elseif strfind(EEG.filename,'rest2'); %if EEG.filename contains 'rest2'
+                video = 'non-social'; %then videotype is 'non-social' (video of toy)
+            elseif strfind(EEG.filename,'rest3'); %if EEG.filename contains 'rest3'
+                video = 'semi-social'; %then videotype was semi-social (hand activating a toy)
+            else 
+                video = 'combined'; %if none of the above, then its combined, you ran a seg script that combined 3 videotypes into a single rest marker
+            end;
+        end;       
+    end;
+     
+    sRate = EEG.srate; %sampling rate
+    window = sRate*4;
+    NFFT = sRate*4; %making window and NFFT variables the same size
+    h=hamming(size(EEG.data,2));
+    
+    
+    
+    %%CLEAR VARIABLES BETWEEN PARTICIPANTS
+    TD_dat_power_ROI = []; %clearing this variable before each case is run 
+    TD_dat_power_ROI_Rel = []; %^^
+    TD_tmp_dat_power = []; %^^
+
+    TD_dat_power_ROI_f = []; %clearing this variable before each case is run 
+    TD_dat_power_ROI_Rel_f = []; %^^
+    TD_tmp_dat_power_f = []; %^^
+
+    relDenom = [];
+    
+    delta = [];
+    deltaRel = [];
+    
+
+    theta = [];
+    thetaRel = [];
+    
+    
+    alpha1 = [];
+    alpha1Rel = [];
+    
+  
+    alpha2 = [];
+    alpha2Rel = [];
+    
+
+    beta = [];
+    betaRel = [];
+    
+
+    gamma = [];
+    gammaRel = [];
+    
+
+    absLog2Str = [];
+    relLog2Str = [];
+    
+
+    
+    for i=1:length(ROI); %For every channel
+        
+        for j=1:size(EEG.data,3); %EEG.data,3 is the number of trials. "for every trial"
+            
+            %pwelch call, welch method of calculating PSD
+            [Pxx,F] = pwelch(EEG.data(ROI(i),:,j),window,[],NFFT,sRate); %calculating absolute power on each channel and trial. doing Fft on 256 points
+            TD_tmp_dat_power(:,j) = Pxx; %frequencies rows x trials column? accumulating the spectrum for each trial
+            
+            %fft call, fft method of calculating PSD (for establishing replicability only, not to be written to csv)
+            dh=h.*squeeze(EEG.data(ROI(i),:,j))';
+            fq=fft(dh);
+            TD_tmp_dat_power_f(:,j)=abs(fq(1:length(TD_tmp_dat_power(:,j)))).^2;% squared (^2) to match "power" values like Pxx of pwelch.
+            
+        end
+        
+         %Get frequency bins of interest   
+         if i == 1
+             fndx = find(F >= 2 & F <= 50); %F is freqs    
+         end
+         
+         TD_dat_power_ROI(:,i) = mean(TD_tmp_dat_power(:,:),2); %calculating average spectrum across trials for channel i. frequencies rows? x channels column
+         TD_dat_power_ROI_f(:,i) = mean(TD_tmp_dat_power_f(:,:),2); %doing the same but for fft (replicability only)
+         
+         %RelativePower that will be used for plotting figures... = freqofinterest(:,:)./sum(freqofinterest,1) % ^^
+         TD_dat_power_ROI_Rel(:,i)=TD_dat_power_ROI(:,i)./trapz(F(fndx),(TD_dat_power_ROI(fndx,i))); % F is freqs, ichan is the channel index, fndx is the vector of frequency bins
+         TD_dat_power_ROI_Rel_f(:,i)= TD_dat_power_ROI_f(:,i)./trapz(F(fndx),(TD_dat_power_ROI_f(fndx,i))); %^^ for FFT replicability test
+         
+        %all of the rows are mean spectrum across trials for that channel
+        
+        
+    end
+
+    %plot psd for both pwelch (blue) and fft (red)on same graph. 
+    %only do this during testing, otherwise COMMENT OUT figure & hold so it doesnt generate a plot for every single file
+    %when plotting pwelch and fft PSDs, they should overlap almost perfectly
+    fqs=0:length(TD_dat_power_ROI_Rel)-1;
+    fqs=fqs*.25;                
+    
+    %Relative Power using both the welch method (blue) and fft (red)
+%     figure;plot(fqs,mean(TD_dat_power_ROI_Rel,2));
+%     hold on;plot(fqs,mean(TD_dat_power_ROI_Rel_f,2),'r');
+%     title(['Relative Power ', EEG.filename]);
+    
+    
+    %absolute power using both the welch method (blue) and fft (red)
+    
+       
+%     figure;plot(fqs,mean(TD_dat_power_ROI,2));
+%     hold on;plot(fqs,mean(TD_dat_power_ROI,2),'r');
+%     title(['absolute power ', EEG.filename]); 
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    
+    relDenom = trapz(F(fndx),TD_dat_power_ROI(fndx,:));  %the power of 2-50hz (our freq range of interest) using the trapezoidal method. It will be the denominator of every bands relative power calculation    
+  
+    %DELTA
+    deltaIndx = find(F>=2 & F<4);
+    delta = trapz(F(deltaIndx),TD_dat_power_ROI(deltaIndx,:)); %the absolute power of delta, using the trapezoidal method. %2-4hz 
+    deltaRel = delta./relDenom; %the relative power of delta. dividing delta power by the power of our freq range of interest
+   
+          
+    %THETA
+    thetaIndx=find (F>=4 & F<6);
+    theta = trapz(F(thetaIndx),TD_dat_power_ROI(thetaIndx,:)); %the absolute power of theta, using the trapezoidal method. %4-6hz 
+    thetaRel = theta./relDenom;  %the relative power of theta. dividing theta power by the power of our freq range of interest
+    
+    
+    %LOW ALPHA
+    alpha1Indx=find(F>=6 & F<9);
+    alpha1 = trapz(F(alpha1Indx),TD_dat_power_ROI(alpha1Indx,:)); %the absolute power of Low Alpha, using the trapezoidal method. %6-9hz 
+    alpha1Rel = alpha1./relDenom; %the relative power of Low Alpha, using the trapezoidal method. dividing alpha1 power by the power of our freq range of interest
+   
+    
+    %HIGH AlPHA
+    alpha2Indx=find(F>=9 & F<13);
+    alpha2 = trapz(F(alpha2Indx),TD_dat_power_ROI(alpha2Indx,:)); %the absolute power of High Alpha, using the trapezoidal method. %9-13hz 
+    alpha2Rel = alpha2./relDenom; %the relative power of High Alpha, using the trapezoidal method. dividing high alpha power by the power of our freq range of interest
+    
+    
+    %BETA
+    betaIndx=find(F>=13 & F<30);
+    beta = trapz(F(betaIndx),TD_dat_power_ROI(betaIndx,:));%the absolute power of beta, using the trapezoidal method. 13-30hz 
+    betaRel = beta./relDenom; %the relative power of beta, using the trapezoidal method. dividing beta power by the power of our freq range of interest
+    
+    
+    %GAMMA
+    gammaIndx=find(F>=30 & F<50);
+    gamma = trapz(F(gammaIndx),TD_dat_power_ROI(gammaIndx,:));%the absolute power of gamma, using the trapezoidal method. 30-50hz 
+    gammaRel = gamma./relDenom; %the relative power of gamma, using the trapezoidal method. dividing beta power by the power of our freq range of interest
+    
+         
+    
+    %Convert Values into string so that they can be written to the CSVfile. THis also organizes the variables in a intuitive way for when
+    %they are written to the CSV
+  
+
+    absPowerAllChans2Str = num2str([delta,theta,alpha1,alpha2,beta,gamma], '%f,');
+    relPowerAllChans2Str = num2str([deltaRel,thetaRel,alpha1Rel,alpha2Rel,betaRel,gammaRel], '%f,');
+    sRate = num2str(EEG.srate); %convert to string so that it can be written to csv
+    
+    %POWER CSV FILE: create headers for the csv file if the csv file doesn't exist yet
+    
+    %Assigns the matlab variables that will be written to the csv file
+    fprintf(fidOut,['%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,',...
+                '%s%s%s%s%s%s\n'],...
+                site,subj,session,gender,risk,outcome,group,video,Trials,sRate,...
+                absPowerAllChans2Str,...
+                relPowerAllChans2Str);
+    
+end
+fclose(fidOut);
