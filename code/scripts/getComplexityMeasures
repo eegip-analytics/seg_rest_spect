@@ -1,0 +1,431 @@
+%This Script calculates ten complexity measures from all Channels 
+%it also gathers demographic information: site, pid, gender, risk, outcome
+%it writes all of this information to a csv file
+
+%This function loads EEGLAB *.set files and extracts features that are saved 
+%to CSV file. The fnamefile input is a text file containing the filenames
+%with paths to each of the *.set files to be loaded (one file per line).
+%From a bash terminal these file name text files can be created as follows:
+%for example...
+%find . -type f -name "*-SEGrest*.set" > derivatives/seg_rest_spect/code/misc/fnames.txt
+%The outfname input is the name of the file containing the output features.
+
+function getComplexity_chan(fnamefile,outfname)
+
+
+fidIn=fopen(fnamefile,'r');
+fnd=fread(fidIn);
+fclose(fidIn);
+cr_ind=find(fnd==10);
+for i=1:length(cr_ind);
+   if i==1;
+      c_fname{i}=deblank(char(fnd(3:cr_ind(i))'));
+   else
+      c_fname{i}=deblank(char(fnd(cr_ind(i-1)+3:cr_ind(i))'));
+   end
+end
+
+
+
+
+% frontal_labs={'AF8','Fpz','AF7','F3','Fz','F4'};1,2,3,4,5,6
+% central_labs={'C3','Cz','C4'};9,10,11
+% posterior_labs={'P3','Pz','P4','PO7','PO8','Oz'};14,15,16,17,18,19
+% temporal_labs={'FT8','TP8','FT7','TP7'};7,8,12,13
+
+
+ROI = [1, 2, 3, 4, 5, 6, 7,8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+
+fidOut = fopen(outfname,'w');       
+header = ['site,pid,age,gender,risk,', ...
+          'outcome,group,', ...
+          'video,nTrials,sRate,',...
+          'AF8SampEnt,FpzSampEnt,AF7SampEnt,F3SampEnt,FzSampEnt,F4SampEnt,C3SampEnt,CzSampEnt,C4SampEnt,P3SampEnt,PzSampEnt,P4SampEnt,PO7SampEnt,PO8SampEnt,OzSampEnt,FT8SampEnt,TP8SampEnt,FT7SampEnt,TP7SampEnt,',...
+          'AF8SpectEnt,FpzSpectEnt,AF7SpectEnt,F3SpectEnt,FzSpectEnt,F4SpectEnt,C3SpectEnt,CzSpectEnt,C4SpectEnt,P3SpectEnt,PzSpectEnt,P4SpectEnt,PO7SpectEnt,PO8SpectEnt,OzSpectEnt,FT8SpectEnt,TP8SpectEnt,FT7SpectEnt,TP7SpectEnt,',...
+          'AF8ApproxEnt,FpzApproxEnt,AF7ApproxEnt,F3ApproxEnt,FzApproxEnt,F4ApproxEnt,C3ApproxEnt,CzApproxEnt,C4ApproxEnt,P3ApproxEnt,PzApproxEnt,P4ApproxEnt,PO7ApproxEnt,PO8ApproxEnt,OzApproxEnt,FT8ApproxEnt,TP8ApproxEnt,FT7ApproxEnt,TP7ApproxEnt,',...
+          'AF8MultPermEnt1,FpzMultPermEnt1,AF7MultPermEnt1,F3MultPermEnt1,FzMultPermEnt1,F4MultPermEnt1,C3MultPermEnt1,CzMultPermEnt1,C4MultPermEnt1,P3MultPermEnt1,PzMultPermEnt1,P4MultPermEnt1,PO7MultPermEnt1,PO8MultPermEnt1,OzMultPermEnt1,FT8MultPermEnt1,TP8MultPermEnt1,FT7MultPermEnt1,TP7MultPermEnt1,',...
+          'AF8MultPermEnt2,FpzMultPermEnt2,AF7MultPermEnt2,F3MultPermEnt2,FzMultPermEnt2,F4MultPermEnt2,C3MultPermEnt2,CzMultPermEnt2,C4MultPermEnt2,P3MultPermEnt2,PzMultPermEnt2,P4MultPermEnt2,PO7MultPermEnt2,PO8MultPermEnt2,OzMultPermEnt2,FT8MultPermEnt2,TP8MultPermEnt2,FT7MultPermEnt2,TP7MultPermEnt2,',...
+          'AF8MultPermEnt3,FpzMultPermEnt3,AF7MultPermEnt3,F3MultPermEnt3,FzMultPermEnt3,F4MultPermEnt3,C3MultPermEnt3,CzMultPermEnt3,C4MultPermEnt3,P3MultPermEnt3,PzMultPermEnt3,P4MultPermEnt3,PO7MultPermEnt3,PO8MultPermEnt3,OzMultPermEnt3,FT8MultPermEnt3,TP8MultPermEnt3,FT7MultPermEnt3,TP7MultPermEnt3,',...
+          'AF8MultPermEnt4,FpzMultPermEnt4,AF7MultPermEnt4,F3MultPermEnt4,FzMultPermEnt4,F4MultPermEnt4,C3MultPermEnt4,CzMultPermEnt4,C4MultPermEnt4,P3MultPermEnt4,PzMultPermEnt4,P4MultPermEnt4,PO7MultPermEnt4,PO8MultPermEnt4,OzMultPermEnt4,FT8MultPermEnt4,TP8MultPermEnt4,FT7MultPermEnt4,TP7MultPermEnt4,',...
+          'AF8LogEneEnt,FpzLogEneEnt,AF7LogEneEnt,F3LogEneEnt,FzLogEneEnt,F4LogEneEnt,C3LogEneEnt,CzLogEneEnt,C4LogEneEnt,P3LogEneEnt,PzLogEneEnt,P4LogEneEnt,PO7LogEneEnt,PO8LogEneEnt,OzLogEneEnt,FT8LogEneEnt,TP8LogEneEnt,FT7LogEneEnt,TP7LogEneEnt,',...
+          'AF8ShanEnt,FpzShanEnt,AF7ShanEnt,F3ShanEnt,FzShanEnt,F4ShanEnt,C3ShanEnt,CzShanEnt,C4ShanEnt,P3ShanEnt,PzShanEnt,P4ShanEnt,PO7ShanEnt,PO8ShanEnt,OzShanEnt,FT8ShanEnt,TP8ShanEnt,FT7ShanEnt,TP7ShanEnt,',...
+          'AF8WavEnt,FpzWavEnt,AF7WavEnt,F3WavEnt,FzWavEnt,F4WavEnt,C3WavEnt,CzWavEnt,C4WavEnt,P3WavEnt,PzWavEnt,P4WavEnt,PO7WavEnt,PO8WavEnt,OzWavEnt,FT8WavEnt,TP8WavEnt,FT7WavEnt,TP7WavEnt,',...
+
+          
+               
+fprintf(fidOut,'%s\n',header);
+
+    
+for  k=1:length(c_fname);
+     EEG = pop_loadset(c_fname{k});
+     
+     %the section below pulls participant information from the EEG data
+     %structure, to be written to a csv file
+     
+     EEG.subject = EEG.filename(6:9); %loads pid
+     subj = EEG.subject; %participant id
+     group = EEG.group; %group is risk + outcome, high risk asd, high risk no asd, etc.
+     
+    Trials = num2str(EEG.trials); %converts number of trials to string so that it can be written to the csv
+     
+    risk = 'na';
+    if strncmp(group,'HR',2);       %if EEG.group contains HR
+        risk = 'HR';                %then participiant is HR: high risk
+    elseif strncmp(group,'LR',2);   %if EEG.group contains LR
+        risk = 'LR';                %then participant is LR: low risk
+    elseif strncmp(group,'lang',2); %if EEG.group contains 'lang'
+        risk = 'lang';              %then participant is lang: language risk (occurs in boston dataset only)
+    else risk = 'UKN';              %if none of the above then risk is unknown
+    end;
+
+    outcome = 'na';
+    if strfind(group,'UKN');    %if EEG.group contains UKN
+        outcome = 'unknown';    %then outcome is unknown
+    elseif strfind(group,'+');  %if EEG.group contains + then
+        outcome = 'asd';        %outcome is ASD
+    else;
+        outcome = 'no-asd';     %otherwise outcome is no ASD
+    end;
+    
+    p=what(EEG.filepath);
+    inAbsPath=p.path;
+    if strfind(inAbsPath,'boston'); %if EEG.filepath contains boston
+        site = 'boston'; %then site is boston
+        gender = EEG.condition; %EEG.condition contains gender info
+        session = num2str(EEG.session); %session is the visit age, 6m, 12m, etc
+        if length(session)==1; session = ['0' session]; end;
+        video = 'social'; %for boston videotype is always 'social'
+    elseif strfind(EEG.filepath,'Washington'); %if EEG.filepath contains 'washington'
+        site = 'washingtinAbsPathon'; %then site is washington
+        gender = EEG.gender; %EEG.condition contains gender info
+        session = num2str(EEG.session); %session is the visit age, 6m, 12m, etc
+        if length(session)==1; session = ['0' session]; end; 
+        if strfind(EEG.filename,'socl'); %if EEG.filename contains socl
+            video = 'social'; %then videotype is social
+        elseif strfind(EEG.filename,'toys'); %if EEG.filename contains 'toys'
+            video = 'non-social'; %then videotype is non-social (vid of toys)
+        else
+            video = 'combined'; %otherwise the videotype is combined. this is if you used a seg script that combined all rest videotypes into one resting marker
+        end;
+    elseif strfind(inAbsPath,'London'); %if EEG.filepath contains 'london'
+        site = 'london'; %then site is london
+        if strcmp(EEG.condition,'0'); %if EEG.condition is 0 (london participant log used a 0, 1 gender coding)
+            gender = 'M'; %then gender is male
+        else;
+            gender = 'F'; %otherwise gender is female (1)
+        end;
+        if strfind(EEG.filename,'ses-m06'); %if EEG.filename contains ses-m06
+            session = '06'; %visit age is 6m
+            video = 'social'; %videotype is always ;social' for 6m visit
+        else;
+            session = '12'; %otherwise visit age is 12m
+            if strfind(EEG.filename,'rest1'); %if EEG.filename contains 'rest1'
+                video = 'social'; %then videotype is social (video of person)
+            elseif strfind(EEG.filename,'rest2'); %if EEG.filename contains 'rest2'
+                video = 'non-social'; %then videotype is 'non-social' (video of toy)
+            elseif strfind(EEG.filename,'rest3'); %if EEG.filename contains 'rest3'
+                video = 'semi-social'; %then videotype was semi-social (hand activating a toy)
+            else 
+                video = 'combined'; %if none of the above, then its combined, you ran a seg script that combined 3 videotypes into a single rest marker
+            end;
+        end;       
+    end;
+    
+    
+w=1; %epoch length or window length in seconds
+m=3; %order of permutation
+t=5; %time delay for permutation entropy and multiscale
+Scale=4;%for multiscale entropy
+fs = EEG.srate;% Sampling frequency
+wavelet_type='db8';
+wavelet_level=8;
+
+%clearing variables between participants
+
+
+features_sample_entropy=[];
+features_spect_ent=[];
+features_app_ent=[];
+features_mult_perm_ent=[];
+features_log_entropy=[];
+features_shannon_entropy=[];
+features_wav_entropy=[];
+    
+
+    
+    for i=1:length(ROI); %For every channel
+        
+        for j=1:size(EEG.data,3); %EEG.data,3 is the number of trials. "for every trial"
+            
+         s=EEG.data(i,:,k);
+         features_sample_entropy(i,k)=SampleEntropy(s,w);
+         features_spect_ent(i,k)=FFT_entropy(s);
+         features_app_ent(i,k)=approx_entropy(w,0.5,s);%similarity measure=0.5
+         mult_perm_ent(i,:,k)=MPerm(s,m,t,Scale);
+         
+         features_mult_perm_ent1(i,k)=mult_perm_ent(i,1,k)
+         features_mult_perm_ent2(i,k)=mult_perm_ent(i,2,k)
+         features_mult_perm_ent3(i,k)=mult_perm_ent(i,3,k)
+         features_mult_perm_ent4(i,k)=mult_perm_ent(i,4,k)
+         
+        features_log_entropy(i,k)=wentropy(s,'log energy');%Compute log energy entropy of s
+        features_shannon_entropy(i,k)=wentropy(s,'shannon');%Compute Shannon entropy of s
+        C=[];
+        L=[]; 
+        Ea=[];
+        Ed=[];
+        [C,L] = wavedec(s,wavelet_level,wavelet_type);%returns the wavelet decomposition of the signal s
+        % Concatenate Ea,Ed and calculate total entropy for each time series
+        [Ea,Ed] = wenergy(C,L);
+        Energy = horzcat(Ea,Ed) ./ 100;
+        features_wav_entropy(i,k) = -sum(Energy.*log(eps+Energy));%Compute wavelet entropy (WE)
+   
+        end
+           
+             
+    end
+
+    
+    %Convert Values into string so that they can be written to the CSVfile. THis also organizes the variables in a intuitive way for when
+    %they are written to the CSV
+  
+
+    EntropyAllChans2Str = num2str([features_sample_entropy,features_spect_ent,features_app_ent,features_mult_perm_ent1,features_mult_perm_ent2,features_mult_perm_ent3,features_mult_perm_ent4,features_log_entropy, features_shannon_entropy,features_wav_entropy, '%f,');
+    
+    sRate = num2str(EEG.srate); %convert to string so that it can be written to csv
+    
+    %POWER CSV FILE: create headers for the csv file if the csv file doesn't exist yet
+    
+    %Assigns the matlab variables that will be written to the csv file
+    fprintf(fidOut,['%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,',...
+                '%s%s%s%s%s%s\n'],...
+                site,subj,session,gender,risk,outcome,group,video,Trials,sRate,...
+                EntropyAllChans2Str);
+    
+end
+fclose(fidOut);
+
+
+
+
+
+function SampEn = SampleEntropy(x,m,r,sflag)
+
+% SampEn = SampleEntropy(x,m,r,sflag)
+%
+% Obligatory inputs:
+%	x - input signal vector (e.g., EEG signal or sound signal)
+%
+% Optional inputs (defaults):
+%	m     = 2;   % template length (epoch length)
+%	r     = 0.2; % matching threshold (default r=.2), when standardized: defined the tolerance as r times the standard deviation
+%	sflag = 1;   % 1 - standardize signal (zero mean, std of one), 0 - no standarization
+%
+% Output:
+%	SampEn - sample entropy estimate (for a sine tone of 1s (Fs=44100) and r=0.2, m=2, the program needed 3.3min)
+%
+% References:
+% Richman JS, Moorman, JR (2000) Physiological time series analysis using approximate 
+%	   entropy and sample entropy. Am J Physiol 278:H2039-H2049
+% Abasolo D, Hornero R, Espino P, Alvarez D, Poza J (2006) Entropy analysis of the EEG
+%	   background activity in Alzheimer’s disease patients. Physioogical Measurement 27:241–253.
+% Molina-Pico A, Cuesta-Frau D, Aboy M, Crespo C, Miró-Martínez P, Oltra-Crespo S (2011) Comparative
+%	   study of approximate entropy and sample entropy robustness to spikes. Artificial Intelligence
+% 	 in Medicine 53:97–106.
+%
+% The first reference introduces the method and provides all formulas. But see also these two references, 
+% because they depict the formulas much clearer. If you need a standard error estimate have a look at (or the papers):
+% http://www.physionet.org/physiotools/sampen/
+%
+% Description: The program calculates the sample entropy (SampEn) of a given signal. SampEn is the negative 
+% logarithm of the conditional probability that two sequences similar for m points remain similar at the next
+% point, where self-matches are not included in calculating the probability. Thus, a lower value of SampEn
+% also indicates more self-similarity in the time series.
+%
+% ---------
+%
+%    Copyright (C) 2012, B. Herrmann
+%    This program is free software: you can redistribute it and/or modify
+%    it under the terms of the GNU General Public License as published by
+%    the Free Software Foundation, either version 3 of the License, or
+%    (at your option) any later version.
+%
+%    This program is distributed in the hope that it will be useful,
+%    but WITHOUT ANY WARRANTY; without even the implied warranty of
+%    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%    GNU General Public License for more details.
+%
+%    You should have received a copy of the GNU General Public License
+%    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%
+% -----------------------------------------------------------------------------------------------------
+% B. Herrmann, Email: herrmann.b@gmail.com, 2012-01-15
+
+% check inputs
+SampEn = [];
+if nargin < 1 || isempty(x), fprintf('Error: x needs to be defined!\n'), return; end
+if ~isvector(x), fprintf('Error: x needs to be a vector!\n'), return; end
+if nargin < 2 || isempty(m), m = 2; end
+if nargin < 3 || isempty(r), r = 0.2; end
+if nargin < 4 || isempty(sflag), sflag = 1; end
+
+% force x to be column vector
+x = x(:);
+N = length(x);
+
+ % normalize/standardize x vector
+if sflag > 0, x = (x - mean(x)) / std(x); end  
+
+% obtain subsequences of the signal
+Xam = zeros(N-m,m+1); Xbm = zeros(N-m,m);
+for ii = 1 : N-m                   % although for N-m+1 subsequences could be extracted for m,
+	Xam(ii,:) = x(ii:ii+m);          % in the Richman approach only N-m are considered as this gives the same length for m and m+1
+	Xbm(ii,:) = x(ii:ii+m-1);
+end
+
+% obtain number of matches
+B = zeros(1,N-m); A = zeros(1,N-m);
+for ii = 1 : N-m
+	% number of matches for m
+	d = abs(bsxfun(@minus,Xbm((1:N-m)~=ii,:),Xbm(ii,:)));
+ 	B(ii) = sum(max(d,[],2) <= r);
+ 	
+	% number of matches for m+1
+	d = abs(bsxfun(@minus,Xam((1:N-m)~=ii,:),Xam(ii,:)));
+ 	A(ii) = sum(max(d,[],2) <= r);
+end
+
+% get probablities for two sequences to match
+B  = 1/(N-m-1) * B;                  % mean number of matches for each subsequence for m
+Bm = 1/(N-m) * sum(B);               % probability that two sequences will match for m points (mean of matches across subsequences)
+A  = 1/(N-m-1) * A;                  % mean number of matches for each subsequence for m+1
+Am = 1/(N-m) * sum(A);               % probability that two sequences will match for m+1 points (mean of matches across subsequences)
+
+cp = Am/Bm;                          % conditional probability
+SampEn = -log(cp);                   % sample entropy
+
+
+end
+
+%%Spectral Entropy
+function Spectral_entropy = FFT_entropy(x)
+NFFT = length(x);
+Y = fft(x,NFFT);
+S = abs(Y(1:NFFT/2+1))/NFFT;
+S = S./sum(S);
+S=S(find(S~=0)); 
+pi = S/sum(S);
+Spectral_entropy = -sum(pi .* log(pi))/log(NFFT);
+end
+
+%%Approximate Entropy
+function [apen] = approx_entropy(n,r,s)
+%% Approximate
+% Entropy is a measure of complexity. It quantifies the unpredictability of
+% fluctuations in a time series
+% To run this function- type: approx_entropy('window length','similarity measure','data set')
+% i.e  approx_entropy(5,0.5,s)
+% window length= length of the window, which should be considered in each iteration
+% similarity measure = measure of distance between the elements
+% data set = data vector
+% small values of apen (approx entropy) means data is predictable, whereas
+% higher values mean that data is unpredictable
+% concept boorowed from http://www.physionet.org/physiotools/ApEn/
+% Author: Avinash Parnandi, parnandi@usc.edu, http://robotics.usc.edu/~parnandi/
+%%
+data =s;
+for m=n:n+1; % run it twice, with window size differing by 1
+set = 0;
+count = 0;
+counter = 0;
+window_correlation = zeros(1,(length(data)-m+1));
+for i=1:(length(data))-m+1,
+    current_window = data(i:i+m-1); % current window stores the sequence to be compared with other sequences
+    
+    for j=1:length(data)-m+1,
+    sliding_window = data(j:j+m-1); % get a window for comparision with the current_window
+    
+    % compare two windows, element by element
+    % can also use some kind of norm measure; that will perform better
+    for k=1:m,
+        if((abs(current_window(k)-sliding_window(k))>r) && set == 0)
+            set = 1; % i.e. the difference between the two sequence is greater than the given value
+        end
+    end
+    if(set==0) 
+         count = count+1; % this measures how many sliding_windows are similar to the current_window
+    end
+    set = 0; % reseting 'set'
+    
+    end
+   counter(i)=count/(length(data)-m+1); % we need the number of similar windows for every cuurent_window
+   count=0;
+i;
+end  %  for i=1:(length(data))-m+1, ends here
+counter;  % this tells how many similar windows are present for each window of length m
+%total_similar_windows = sum(counter);
+%window_correlation = counter/(length(data)-m+1);
+correlation(m-n+1) = ((sum(counter))/(length(data)-m+1));
+ end % for m=n:n+1; % run it twice   
+   correlation(1);
+   correlation(2);
+apen = log(correlation(1)/correlation(2));
+end
+
+%%Multiscale Permutation Entropy
+function MPE = MPerm(X,m,t,Scale)
+%  Calculate the Multiscale Permutation Entropy (MPE)
+%  Input:   X: time series;
+%           m: order of permuation entropy
+%           t: delay time of permuation entropy, 
+%           Scale: the scale factor
+% Output: 
+%           MPE: multiscale permuation entropy
+%Ref: G Ouyang, J Li, X Liu, X Li, Dynamic Characteristics of Absence EEG Recordings with Multiscale Permutation %     %                             Entropy Analysis, Epilepsy Research, doi: 10.1016/j.eplepsyres.2012.11.003
+%     G Ouyang, C Dang, X Li, Complexity Analysis of EEG Data with Multiscale Permutation Entropy, Advances in %       %                      Cognitive Neurodynamics (II), 2011, pp 741-745 
+MPE=[];
+for j=1:Scale
+    Xs = Multi(X,j);
+    PE = pen(Xs,m,t);
+    MPE=[MPE PE];
+end
+end
+        function M_Data = Multi(Data,S)
+%  generate the consecutive coarse-grained time series
+%  Input:   Data: time series;
+%           S: the scale factor
+% Output: 
+%           M_Data: the coarse-grained time series at the scale factor S
+L = length(Data);
+J = fix(L/S);
+for i=1:J
+M_Data(i) = mean(Data((i-1)*S+1:i*S));
+end
+        end
+
+%%Permutation Entropy
+function perm_ent = pen(x,m,t)
+% Calculate the permutation entropy (PE)
+% Input:    X: time series;
+%           m: order of permuation entropy
+%           t: delay time of permuation entropy,
+%Ref: 1)C. Bandt, and B. Pompe. "Permutation entropy: a natural complexity measure for time series." Physical review letters 88.17 (2002).
+% 2) H. Azami and J. Escudero, “Improved Multiscale Permutation Entropy for Biomedical Signal Analysis: Interpretation and Application to Electroencephalogram Signals”,  Biomedical Signal Processing and Control , 2015.     %
+
+PE_Temp = perms(1:m);
+a(1:length(PE_Temp))=0;
+
+for j=1:(length(x)-t*(m-1))
+    [~,iv]=sort(x(j:t:j+t*(m-1)));
+    for jj=1:length(PE_Temp)
+        if (abs(PE_Temp(jj,:)-iv(:)'))==0
+            a(jj) = a(jj) + 1 ;
+        end
+    end
+end
+
+% Computation of entropy based on the histogram of the motifs
+a=a(a~=0);
+p = a/sum(a);
+perm_ent = -sum(p .* log(p));
+end
